@@ -27,15 +27,13 @@ async def event_request_handler():
                         if request_data.get("action") == "get_events":
                             event_service = EventService(repo)
                             events = await event_service.list_events()
-
-                            # Конвертируем datetime в строку
                             response_data = [
                                 {
                                     "id": event.id,
                                     "odds": event.odds,
                                     "name": event.name,
-                                    "deadline": event.deadline.isoformat(),  # 🟢 Фикс JSON ошибки
-                                    "status": event.status.value  # 🟢 Конвертируем Enum в строку
+                                    "deadline": event.deadline.isoformat(), 
+                                    "status": event.status.value 
                                 }
                                 for event in events
                             ]
@@ -53,7 +51,7 @@ async def event_request_handler():
             await queue.consume(process_request)
             print("[✅] Ожидание запросов...")
 
-            await asyncio.Future()  # Бесконечный цикл ожидания
+            await asyncio.Future()
 
     except Exception as e:
         print(f"[❌] Ошибка запуска обработчика событий: {e}")
