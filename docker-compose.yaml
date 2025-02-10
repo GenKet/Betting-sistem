@@ -1,0 +1,107 @@
+version: '3.8'
+
+services:
+
+  postgres_bet:
+    image: postgres:16
+    container_name: bet_maker_db
+    restart: always
+    environment:
+      POSTGRES_DB: betting_db
+      POSTGRES_USER: betting_user
+      POSTGRES_PASSWORD: betting_password
+    ports:
+      - "5434:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - pg_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U betting_user -d betting_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: pgadmin
+    ports:
+      - 5051:80
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    depends_on:
+      postgres_bet:
+        condition: service_healthy
+    networks:
+      - pg_network
+
+  redis:
+    image: redis:alpine
+    container_name: betting_redis
+    restart: always
+    ports:
+      - "6379:6379"
+    networks:
+      - pg_network
+
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: betting_rabbitmq
+    restart: always
+    ports:
+      - "5672:5672"      
+      - "15672:15672"    
+    networks:
+      - pg_network
+    healthcheck:
+      test: ["CMD-SHELL", "rabbitmqctl status"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  line-provider:
+    build: 
+      context: .
+      dockerfile: line_provider/Dockerfile
+    container_name: line_provider
+    restart: always
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    networks:
+      - pg_network
+    environment:
+      - RABBITMQ_URL=amqp://guest:guest@betting_rabbitmq/
+      - REDIS_URL=redis://betting_redis:6379
+
+  bet-maker:
+    build: 
+      context: .
+      dockerfile: bet_maker/Dockerfile
+    container_name: bet_maker
+    depends_on:
+      postgres_bet:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_started
+      line-provider:
+        condition: service_started
+    ports:
+      - "8001:8001"
+    networks:
+      - pg_network
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://betting_user:betting_password@bet_maker_db:5432/betting_db
+      - RABBITMQ_URL=amqp://guest:guest@betting_rabbitmq/
+      - REDIS_URL=redis://betting_redis:6379
+
+networks:
+  pg_network:
+    driver: bridge
+
+volumes:
+  postgres_data:

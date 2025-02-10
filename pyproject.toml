@@ -1,0 +1,32 @@
+[project]
+name = "betting-system"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "GenKet",email = "artemkot2281@gmail.com"}
+]
+readme = "README.md"
+packages = [{include = "betting-system"}]
+requires-python = ">=3.10, <4.0"
+dependencies = [
+    "fastapi (>=0.115.8,<0.116.0)",
+    "uvicorn (>=0.34.0,<0.35.0)",
+    "aioredis (>=2.0.1,<3.0.0)",
+    "asyncpg (>=0.30.0,<0.31.0)",
+    "sqlalchemy[asyncio] (>=2.0.37,<3.0.0)",
+    "pydantic (>=2.10.6,<3.0.0)",
+    "aio-pika (>=9.5.4,<10.0.0)",
+    "python-dotenv (>=1.0.1,<2.0.0)",
+    "pytest",
+    "pytest-asyncio"
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3.4"
+pytest-asyncio = "^0.25.3"
+httpx = "^0.28.1"
